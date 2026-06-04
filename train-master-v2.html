@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train Master — SG & Osaka</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Bebas+Neue&display=swap');
+
+:root {
+  --bg:#0a0e1a; --panel:#111827; --border:#1e2d45;
+  --accent:#00d4ff; --accent2:#ff6b35; --accent3:#a8ff3e;
+  --text:#e2e8f0; --muted:#64748b; --gold:#ffd700;
+  --red:#ff4757; --green:#2ed573;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+.app{position:relative;z-index:1;max-width:1100px;margin:0 auto;padding:20px}
+
+/* HEADER */
+header{text-align:center;padding:28px 0 18px;border-bottom:1px solid var(--border);margin-bottom:22px}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,8vw,5rem);letter-spacing:6px;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.subtitle{font-size:.72rem;color:var(--muted);letter-spacing:3px;margin-top:5px}
+.city-toggle{display:flex;justify-content:center;gap:10px;margin-top:16px}
+.city-btn{background:var(--panel);border:2px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:.82rem;padding:8px 22px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.city-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08)}
+.city-btn:hover:not(.active){border-color:var(--muted);color:var(--text)}
+
+/* MODE TABS */
+.mode-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.mode-tab{flex:1;min-width:110px;background:var(--panel);border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:.75rem;padding:11px 8px;cursor:pointer;transition:all .2s;text-align:center;letter-spacing:1px}
+.mode-tab .icon{font-size:1.3rem;display:block;margin-bottom:3px}
+.mode-tab.active{border-color:var(--accent2);color:var(--accent2);background:rgba(255,107,53,.08)}
+
+/* MAIN PANEL */
+.main-panel{background:var(--panel);border:1px solid var(--border);padding:24px;min-height:420px}
+
+/* ── EXPLORE ── */
+.explore-grid{display:flex;flex-direction:column;gap:14px}
+.line-block{border-left:4px solid var(--border);padding-left:14px}
+.line-header{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;padding:8px 0}
+.line-dot{width:16px;height:16px;border-radius:50%;flex-shrink:0}
+.line-name{font-size:.88rem;font-weight:700;letter-spacing:1px}
+.line-code{font-size:.65rem;color:var(--muted);margin-left:auto}
+.stations-row{display:none;flex-wrap:wrap;gap:6px;padding:8px 0}
+.stations-row.open{display:flex}
+.station-chip{background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:.68rem;padding:4px 10px;cursor:pointer;transition:all .15s;color:var(--muted)}
+.station-chip:hover{background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+
+/* Station Modal */
+.station-modal{position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.station-modal.open{display:flex}
+.modal-card{background:#111827;border:2px solid var(--border);max-width:440px;width:100%;padding:26px;position:relative;animation:slideUp .2s ease}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-close{position:absolute;top:12px;right:16px;background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer}
+.modal-line-badge{display:inline-block;font-size:.68rem;padding:3px 10px;margin-bottom:10px;font-weight:700;color:#fff}
+.modal-station-name{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:2px;margin-bottom:4px}
+.modal-jp{font-family:'Noto Sans JP',sans-serif;color:var(--muted);font-size:.95rem;margin-bottom:14px}
+.modal-facts{display:flex;flex-direction:column;gap:8px}
+.fact-row{display:flex;gap:10px;font-size:.76rem;align-items:flex-start}
+.fact-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.fact-text{color:var(--muted);line-height:1.5}
+.fact-text strong{color:var(--text)}
+.neighbors-row{margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:.72rem;color:var(--muted)}
+.neighbors-row span{color:var(--text)}
+
+/* ── QUIZ — NAME ENTRY SCREEN ── */
+.name-screen{max-width:480px;margin:0 auto;text-align:center;padding:30px 0}
+.name-screen h2{font-family:'Bebas Neue',sans-serif;font-size:2.4rem;letter-spacing:4px;color:var(--accent);margin-bottom:8px}
+.name-screen p{font-size:.78rem;color:var(--muted);letter-spacing:2px;margin-bottom:28px}
+.name-input{width:100%;background:var(--bg);border:2px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:1.1rem;padding:14px 18px;text-align:center;letter-spacing:3px;outline:none;margin-bottom:16px;transition:border-color .2s}
+.name-input:focus{border-color:var(--accent)}
+.name-input::placeholder{color:var(--muted);font-size:.85rem;letter-spacing:2px}
+.start-quiz-btn{background:none;border:2px solid var(--accent3);color:var(--accent3);font-family:'Space Mono',monospace;font-size:.85rem;padding:13px 36px;cursor:pointer;letter-spacing:3px;transition:all .2s;width:100%}
+.start-quiz-btn:hover{background:rgba(168,255,62,.1)}
+.start-quiz-btn:disabled{opacity:.35;cursor:default}
+
+/* ── QUIZ — ACTIVE ── */
+.quiz-header{display:flex;align-items:center;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.quiz-progress-wrap{flex:1;min-width:180px}
+.progress-label{font-size:.62rem;color:var(--muted);letter-spacing:2px;margin-bottom:6px;display:flex;justify-content:space-between}
+.progress-bar{height:4px;background:var(--border);position:relative}
+.progress-fill{height:100%;background:var(--accent);transition:width .4s ease}
+
+.quiz-timer-ring{position:relative;width:64px;height:64px;flex-shrink:0}
+.quiz-timer-ring svg{transform:rotate(-90deg)}
+.timer-track{stroke:var(--border)}
+.timer-fill{stroke:var(--accent3);transition:stroke-dashoffset .9s linear;stroke-linecap:round}
+.timer-fill.warn{stroke:var(--accent2)}
+.timer-fill.danger{stroke:var(--red)}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--accent3)}
+.timer-num.warn{color:var(--accent2)}
+.timer-num.danger{color:var(--red)}
+
+.quiz-live-stats{display:flex;gap:16px;font-size:.7rem;font-family:'Space Mono',monospace}
+.qs-item{text-align:center}
+.qs-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;line-height:1}
+.qs-label{color:var(--muted);letter-spacing:1px;font-size:.58rem}
+
+.quiz-card{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:22px;margin-bottom:16px}
+.quiz-type-label{font-size:.6rem;color:var(--muted);letter-spacing:3px;margin-bottom:8px}
+.quiz-question{font-size:1rem;line-height:1.6;margin-bottom:4px}
+.quiz-hint{font-size:.72rem;color:var(--muted);margin-top:4px}
+
+.quiz-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.quiz-opt{background:var(--panel);border:2px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:.76rem;padding:12px 10px;cursor:pointer;transition:all .15s;text-align:center;position:relative}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);background:rgba(0,212,255,.08)}
+.quiz-opt.correct{border-color:var(--accent3);background:rgba(168,255,62,.12);color:var(--accent3)}
+.quiz-opt.wrong{border-color:var(--red);background:rgba(255,71,87,.1);color:var(--red)}
+.quiz-opt:disabled{cursor:default}
+.quiz-opt .q-time-badge{font-size:.6rem;display:block;margin-top:3px;opacity:.7}
+
+.quiz-feedback{text-align:center;font-size:.82rem;padding:10px;min-height:40px}
+
+.quiz-next{display:block;width:100%;background:none;border:2px solid var(--accent);color:var(--accent);font-family:'Space Mono',monospace;font-size:.82rem;padding:11px;cursor:pointer;letter-spacing:2px;transition:all .2s;margin-top:8px}
+.quiz-next:hover{background:rgba(0,212,255,.1)}
+.quiz-next:disabled{opacity:.3;cursor:default}
+
+/* ── QUIZ — RESULTS ── */
+.results-screen{text-align:center;padding:10px 0}
+.results-title{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:4px;margin-bottom:4px}
+.results-player{font-size:.75rem;color:var(--muted);letter-spacing:3px;margin-bottom:22px}
+.results-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;max-width:560px;margin-left:auto;margin-right:auto}
+.rg-item{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:16px 8px}
+.rg-val{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;line-height:1}
+.rg-label{font-size:.58rem;color:var(--muted);letter-spacing:2px;margin-top:2px}
+.result-rank-badge{display:inline-block;font-size:.7rem;padding:6px 18px;border:1px solid var(--gold);color:var(--gold);letter-spacing:2px;margin-bottom:22px}
+.results-breakdown{text-align:left;max-width:560px;margin:0 auto 22px;border:1px solid var(--border)}
+.rb-row{display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid var(--border);font-size:.72rem}
+.rb-row:last-child{border-bottom:none}
+.rb-qnum{color:var(--muted);width:28px;flex-shrink:0}
+.rb-q{flex:1;color:var(--muted);font-size:.68rem;line-height:1.3}
+.rb-result{font-size:.7rem;flex-shrink:0;width:50px;text-align:right}
+.rb-time{color:var(--muted);font-size:.65rem;flex-shrink:0;width:44px;text-align:right}
+.rb-row.correct-row .rb-result{color:var(--accent3)}
+.rb-row.wrong-row .rb-result{color:var(--red)}
+.results-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.res-btn{background:none;border:2px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:.75rem;padding:10px 22px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.res-btn:hover{border-color:var(--text);color:var(--text)}
+.res-btn.primary{border-color:var(--accent3);color:var(--accent3)}
+.res-btn.primary:hover{background:rgba(168,255,62,.1)}
+
+/* ── LEADERBOARD ── */
+.lb-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.lb-title{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:3px;color:var(--gold)}
+.lb-filters{display:flex;gap:8px}
+.lb-filter{background:none;border:1px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:.65rem;padding:5px 12px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.lb-filter.active{border-color:var(--gold);color:var(--gold)}
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{font-size:.62rem;color:var(--muted);letter-spacing:2px;padding:8px 12px;text-align:left;border-bottom:2px solid var(--border)}
+.lb-table td{font-size:.78rem;padding:11px 12px;border-bottom:1px solid rgba(30,45,69,.6)}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;width:40px}
+.lb-rank.gold{color:var(--gold)}
+.lb-rank.silver{color:#c0c0c0}
+.lb-rank.bronze{color:#cd7f32}
+.lb-name{font-size:.85rem;font-weight:700}
+.lb-score{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent3)}
+.lb-acc{color:var(--accent2)}
+.lb-time-avg{color:var(--accent3);font-size:.72rem}
+.lb-city-badge{font-size:.58rem;padding:2px 8px;border:1px solid var(--border);color:var(--muted);letter-spacing:1px}
+.lb-empty{text-align:center;padding:40px;color:var(--muted);font-size:.8rem;letter-spacing:2px}
+.lb-clear-btn{background:none;border:1px solid var(--red);color:var(--red);font-family:'Space Mono',monospace;font-size:.62rem;padding:5px 12px;cursor:pointer;letter-spacing:1px;transition:all .2s}
+.lb-clear-btn:hover{background:rgba(255,71,87,.1)}
+
+/* BUILD MODE */
+.build-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.build-title{font-size:.82rem;color:var(--muted);letter-spacing:1px}
+.build-challenge{font-size:.82rem;color:var(--accent3);background:rgba(168,255,62,.08);border:1px solid rgba(168,255,62,.2);padding:7px 13px}
+.route-display{min-height:66px;background:rgba(0,0,0,.3);border:2px dashed var(--border);padding:13px;margin-bottom:14px;display:flex;align-items:center;flex-wrap:wrap;gap:0}
+.route-display.has-route{border-style:solid;border-color:var(--border)}
+.route-station{display:flex;align-items:center}
+.route-node{background:rgba(255,255,255,.05);border:1px solid var(--border);font-size:.7rem;padding:5px 10px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.route-node:hover{border-color:var(--accent2);color:var(--accent2)}
+.route-node.correct-node{border-color:var(--accent3);color:var(--accent3)}
+.route-node.wrong-node{border-color:var(--red);color:var(--red)}
+.route-arrow{color:var(--muted);font-size:.78rem;padding:0 2px}
+.route-placeholder{color:var(--muted);font-size:.78rem;letter-spacing:2px}
+.station-bank{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;max-height:190px;overflow-y:auto;padding:10px;background:rgba(0,0,0,.2);border:1px solid var(--border)}
+.bank-chip{background:rgba(255,255,255,.04);border:1px solid var(--border);font-size:.7rem;padding:5px 11px;cursor:pointer;transition:all .15s;color:var(--muted)}
+.bank-chip:hover:not(.used){background:rgba(0,212,255,.1);border-color:var(--accent);color:var(--accent)}
+.bank-chip.used{opacity:.3;cursor:default;text-decoration:line-through}
+.build-actions{display:flex;gap:10px;flex-wrap:wrap}
+.build-btn{background:none;border:2px solid var(--border);color:var(--muted);font-family:'Space Mono',monospace;font-size:.72rem;padding:8px 16px;cursor:pointer;transition:all .2s;letter-spacing:1px}
+.build-btn:hover{border-color:var(--text);color:var(--text)}
+.build-btn.primary{border-color:var(--accent3);color:var(--accent3)}
+.build-btn.danger{border-color:var(--red);color:var(--red)}
+.build-result{margin-top:12px;padding:13px;font-size:.8rem;line-height:1.6;border:1px solid var(--border);display:none}
+.build-result.show{display:block}
+
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">TRAIN MASTER</div>
+  <div class="subtitle">SINGAPORE &nbsp;·&nbsp; OSAKA &nbsp;·&nbsp; KNOW YOUR NETWORK</div>
+  <div class="city-toggle">
+    <button class="city-btn active" onclick="setCity('sg')">🇸🇬 Singapore MRT</button>
+    <button class="city-btn" onclick="setCity('osaka')">🇯🇵 Osaka Metro</button>
+  </div>
+</header>
+
+<div class="mode-tabs">
+  <button class="mode-tab active" onclick="setMode('explore')"><span class="icon">🗺️</span>EXPLORE</button>
+  <button class="mode-tab" onclick="setMode('quiz')"><span class="icon">🧠</span>QUIZ</button>
+  <button class="mode-tab" onclick="setMode('build')"><span class="icon">🛤️</span>BUILD ROUTE</button>
+  <button class="mode-tab" onclick="setMode('leaderboard')"><span class="icon">🏆</span>LEADERBOARD</button>
+</div>
+
+<div class="main-panel">
+
+  <!-- ===== EXPLORE ===== -->
+  <div id="mode-explore">
+    <div id="explore-lines" class="explore-grid"></div>
+  </div>
+
+  <!-- ===== QUIZ ===== -->
+  <div id="mode-quiz" class="hidden">
+
+    <!-- Name Entry -->
+    <div id="quiz-name-screen" class="name-screen">
+      <div style="font-size:2.5rem;margin-bottom:12px">🚇</div>
+      <h2>QUIZ CHALLENGE</h2>
+      <p>20 QUESTIONS &nbsp;·&nbsp; TIMED &nbsp;·&nbsp; RANKED</p>
+      <input type="text" class="name-input" id="player-name-input" placeholder="ENTER YOUR NAME" maxlength="18" oninput="checkNameInput()">
+      <button class="start-quiz-btn" id="start-quiz-btn" onclick="startQuiz()" disabled>START →</button>
+    </div>
+
+    <!-- Active Quiz -->
+    <div id="quiz-active" class="hidden">
+      <div class="quiz-header">
+        <div class="quiz-progress-wrap">
+          <div class="progress-label">
+            <span id="q-progress-text">Q 1 / 20</span>
+            <span id="q-city-label">SG</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:5%"></div></div>
+        </div>
+        <div class="quiz-timer-ring">
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle class="timer-track" cx="32" cy="32" r="27" fill="none" stroke-width="5"/>
+            <circle class="timer-fill" id="timer-arc" cx="32" cy="32" r="27" fill="none" stroke-width="5"
+              stroke-dasharray="169.6" stroke-dashoffset="0"/>
+          </svg>
+          <div class="timer-num" id="timer-num">15</div>
+        </div>
+        <div class="quiz-live-stats">
+          <div class="qs-item">
+            <div class="qs-val" id="live-score" style="color:var(--accent3)">0</div>
+            <div class="qs-label">SCORE</div>
+          </div>
+          <div class="qs-item">
+            <div class="qs-val" id="live-correct" style="color:var(--green)">0</div>
+            <div class="qs-label">✓</div>
+          </div>
+          <div class="qs-item">
+            <div class="qs-val" id="live-streak" style="color:var(--gold)">0</div>
+            <div class="qs-label">🔥</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="quiz-card">
+        <div class="quiz-type-label" id="q-type-label">—</div>
+        <div class="quiz-question" id="q-text">—</div>
+        <div class="quiz-hint" id="q-hint"></div>
+        <div class="quiz-options" id="q-options"></div>
+        <div class="quiz-feedback" id="q-feedback"></div>
+      </div>
+      <button class="quiz-next" id="quiz-next-btn" onclick="nextQuestion()" disabled>NEXT →</button>
+    </div>
+
+    <!-- Results -->
+    <div id="quiz-results" class="hidden results-screen">
+      <div class="results-title" id="res-title">RESULT</div>
+      <div class="results-player" id="res-player">—</div>
+      <div class="results-grid">
+        <div class="rg-item"><div class="rg-val" id="res-score" style="color:var(--accent3)">0</div><div class="rg-label">SCORE</div></div>
+        <div class="rg-item"><div class="rg-val" id="res-acc" style="color:var(--accent2)">0%</div><div class="rg-label">ACCURACY</div></div>
+        <div class="rg-item"><div class="rg-val" id="res-avg" style="color:var(--accent)">0s</div><div class="rg-label">AVG TIME</div></div>
+        <div class="rg-item"><div class="rg-val" id="res-streak" style="color:var(--gold)">0</div><div class="rg-label">BEST 🔥</div></div>
+      </div>
+      <div class="result-rank-badge" id="res-rank-badge">—</div>
+      <div class="results-breakdown" id="results-breakdown"></div>
+      <div class="results-btns">
+        <button class="res-btn primary" onclick="retryQuiz()">↺ RETRY</button>
+        <button class="res-btn" onclick="changePlayer()">👤 CHANGE PLAYER</button>
+        <button class="res-btn" onclick="setMode('leaderboard')">🏆 LEADERBOARD</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BUILD ROUTE ===== -->
+  <div id="mode-build" class="hidden">
+    <div class="build-header">
+      <div class="build-title">BUILD YOUR ROUTE</div>
+      <div class="build-challenge" id="build-challenge-label">Loading…</div>
+    </div>
+    <div class="route-display" id="route-display">
+      <span class="route-placeholder">← Click stations below to add them to your route</span>
+    </div>
+    <div class="station-bank" id="station-bank"></div>
+    <div class="build-actions">
+      <button class="build-btn danger" onclick="clearRoute()">✕ CLEAR</button>
+      <button class="build-btn" onclick="newChallenge()">↺ NEW CHALLENGE</button>
+      <button class="build-btn primary" onclick="checkRoute()">✓ CHECK ROUTE</button>
+    </div>
+    <div class="build-result" id="build-result"></div>
+  </div>
+
+  <!-- ===== LEADERBOARD ===== -->
+  <div id="mode-leaderboard" class="hidden">
+    <div class="lb-header">
+      <div class="lb-title">🏆 LEADERBOARD</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="lb-filters">
+          <button class="lb-filter active" onclick="setLBFilter('all')">ALL</button>
+          <button class="lb-filter" onclick="setLBFilter('sg')">🇸🇬 SG</button>
+          <button class="lb-filter" onclick="setLBFilter('osaka')">🇯🇵 OSAKA</button>
+        </div>
+        <button class="lb-clear-btn" onclick="clearLeaderboard()">✕ CLEAR ALL</button>
+      </div>
+    </div>
+    <div id="lb-content"></div>
+  </div>
+</div>
+
+<!-- Station Modal -->
+<div class="station-modal" id="station-modal" onclick="closeModal(event)">
+  <div class="modal-card">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="modal-badge" class="modal-line-badge"></div>
+    <div class="modal-station-name" id="modal-name"></div>
+    <div class="modal-jp" id="modal-jp"></div>
+    <div class="modal-facts" id="modal-facts"></div>
+    <div class="neighbors-row" id="modal-neighbors"></div>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// DATA
+// =====================================================================
+const DATA = {
+  sg: {
+    lines: [
+      { id:'ns', name:'North-South Line', code:'NSL', color:'#e4261b', stations:[
+        {id:'jur',name:'Jurong East',code:'NS1',jp:null,facts:['Major interchange with East-West Line','Opened 1990','Near Jurong Lake District development']},
+        {id:'buo',name:'Buona Vista',code:'NS4',jp:null,facts:['Interchange with Circle Line','Near one-north tech hub','Serves NUS and Science Park']},
+        {id:'que',name:'Queenstown',code:'NS5',jp:null,facts:['Singapore\'s first satellite town','Station opened 1987','Has distinctive arched roof design']},
+        {id:'com',name:'Commonwealth',code:'NS6',jp:null,facts:['Named after Commonwealth Avenue','Near Queensway Shopping Centre','Opened 1987']},
+        {id:'out',name:'Outram Park',code:'NS26',jp:null,facts:['Triple interchange: NSL, EWL, TEL','Near Singapore General Hospital','One of SGP\'s busiest stations']},
+        {id:'toa',name:'Toa Payoh',code:'NS19',jp:null,facts:['Second HDB new town in Singapore','Famous for dragon playground','Major commercial hub in central SG']},
+        {id:'bis',name:'Bishan',code:'NS17',jp:null,facts:['Interchange with Circle Line','Named after a cemetery relocated in 1980s','Near Bishan-Ang Mo Kio Park']},
+        {id:'ang',name:'Ang Mo Kio',code:'NS16',jp:null,facts:['Name means "red-haired ghost" in Hokkien','Major town centre hub','Near ITE College Central']},
+        {id:'yis',name:'Yishun',code:'NS13',jp:null,facts:['Northernmost major town on NSL','Interchange with future CRL','Has a reservoir and park nearby']},
+        {id:'woo',name:'Woodlands',code:'NS9',jp:null,facts:['Interchange with Thomson-East Coast Line','Near Causeway to Malaysia','Second Checkpoint station in SG']},
+        {id:'cit',name:'City Hall',code:'NS25',jp:null,facts:['Interchange with East-West Line','Adjacent to Padang and St Andrew\'s Cathedral','Opened 1987']},
+        {id:'raf',name:'Raffles Place',code:'NS26',jp:null,facts:['Heart of SG CBD','Interchange with EWL','Named after Sir Stamford Raffles']},
+        {id:'mar',name:'Marina Bay',code:'NS27',jp:null,facts:['Interchange with DTL and future CRL','Connected to Marina Bay Sands','Circle-shaped station design']},
+      ]},
+      { id:'ew', name:'East-West Line', code:'EWL', color:'#009645', stations:[
+        {id:'pas',name:'Pasir Ris',code:'EW1',jp:null,facts:['Easternmost EWL station','Near Pasir Ris Park and beach','Connected to Downtown East']},
+        {id:'tam',name:'Tampines',code:'EW2',jp:null,facts:['Major interchange with DTL','Largest town in eastern SG','Tampines Mall nearby']},
+        {id:'sim',name:'Simei',code:'EW3',jp:null,facts:['Near Changi General Hospital','Quiet residential station','Gateway to Changi area']},
+        {id:'tan',name:'Tanah Merah',code:'EW4',jp:null,facts:['Interchange with Changi Airport branch','Fork station on EWL','Very wide platforms']},
+        {id:'bed',name:'Bedok',code:'EW5',jp:null,facts:['Bedok 85 Hawker Centre nearby','High residential density area','Named after Malay: "bedok" drum']},
+        {id:'kembangan',name:'Kembangan',code:'EW6',jp:null,facts:['Named after Malay word for "bloom"','Quiet suburban residential station','Near Kembangan Plaza']},
+        {id:'eunos',name:'Eunos',code:'EW7',jp:null,facts:['Named after Singapore\'s first Malay mayor Mohammed Eunos','Near Geylang Serai Market and heritage precinct','Opened 1989']},
+        {id:'paylebar',name:'Paya Lebar',code:'EW8',jp:null,facts:['Major interchange with Circle Line','Paya Lebar Quarter mall connected','Named after a freshwater marsh that once existed here']},
+        {id:'aljunied',name:'Aljunied',code:'EW9',jp:null,facts:['Named after Arab trader Syed Omar Aljunied who settled in 1820s','Situated between Paya Lebar and Kallang','Quiet station near Geylang heritage area']},
+        {id:'kal2',name:'Kallang',code:'EW10',jp:null,facts:['Near Singapore Sports Hub','National Stadium area','Named after Kallang River']},
+        {id:'lav',name:'Lavender',code:'EW11',jp:null,facts:['Named after Lavender Street cemetery (relocated)','Near Geylang heritage precinct','Close to Jalan Besar area']},
+        {id:'bug',name:'Bugis',code:'EW12',jp:null,facts:['Interchange with Downtown Line','Named after Bugis seafarers from Sulawesi','Bugis Junction and Street nearby']},
+        {id:'cit2',name:'City Hall',code:'EW13',jp:null,facts:['Interchange with North-South Line','Same station as NS25','Padang and National Gallery nearby']},
+        {id:'raf2',name:'Raffles Place',code:'EW14',jp:null,facts:['Same interchange as NS26','CBD financial district','Deepest part of original MRT system']},
+      ]},
+      { id:'cc', name:'Circle Line', code:'CCL', color:'#fa9e0d', stations:[
+        {id:'dho',name:'Dhoby Ghaut',code:'CC1',jp:null,facts:['Triple interchange: NSL, NEL, CCL','One of SG\'s busiest stations','Named after Indian washermen']},
+        {id:'bra',name:'Bras Basah',code:'CC2',jp:null,facts:['Near Singapore Management University','Named after wet rice dried here','Arts and culture precinct']},
+        {id:'esp',name:'Esplanade',code:'CC3',jp:null,facts:['Near Theatres on the Bay','Named after the open field by Marina Bay','Close to Merlion Park']},
+        {id:'pro',name:'Promenade',code:'CC4',jp:null,facts:['Interchange with Downtown Line','Elevated section near Marina Bay','Great view of CBD skyline']},
+        {id:'nic',name:'Nicoll Highway',code:'CC5',jp:null,facts:['Named after Brigadier General William Nicoll','Construction collapse occurred in 2004','Near old army barracks site']},
+        {id:'sta',name:'Stadium',code:'CC6',jp:null,facts:['Serves Singapore Sports Hub','Near National Stadium','High footfall during events']},
+        {id:'mou',name:'Mountbatten',code:'CC7',jp:null,facts:['Named after Lord Mountbatten','Quiet residential area','Near Old Kallang Airport']},
+        {id:'dak',name:'Dakota',code:'CC8',jp:null,facts:['Named after Dakota Crescent estate','Near Geylang Bahru','Heritage crescent flats nearby']},
+        {id:'pay2',name:'Paya Lebar',code:'CC9',jp:null,facts:['Interchange with East-West Line','Above-ground section here','Paya Lebar Quarter mall nearby']},
+        {id:'seq',name:'Serangoon',code:'CC13',jp:null,facts:['Interchange with North-East Line','nex Mall connected','Named after Malay word for hornbill']},
+      ]},
+      { id:'ne', name:'North-East Line', code:'NEL', color:'#9900aa', stations:[
+        {id:'har',name:'HarbourFront',code:'NE1',jp:null,facts:['Terminus of NEL and CCL','Gateway to Sentosa via cable car','VivoCity mall connected']},
+        {id:'out2',name:'Outram Park',code:'NE3',jp:null,facts:['Triple interchange: NSL, EWL, TEL','Near Singapore General Hospital','Opened 2003']},
+        {id:'chi',name:'Chinatown',code:'NE4',jp:null,facts:['Interchange with Downtown Line','Heart of Chinatown conservation area','Pagoda Street nearby']},
+        {id:'cla',name:'Clarke Quay',code:'NE5',jp:null,facts:['Famous nightlife and riverside area','Named after Governor Sir Andrew Clarke','Near Singapore River walk']},
+        {id:'dho2',name:'Dhoby Ghaut',code:'NE6',jp:null,facts:['Same triple interchange as CC1/NS24','Near Plaza Singapura','Arts hub gateway']},
+        {id:'lit',name:'Little India',code:'NE7',jp:null,facts:['Interchange with Downtown Line','Heart of Indian heritage area','Mustafa Centre never closes']},
+        {id:'sec',name:'Serangoon',code:'NE12',jp:null,facts:['Interchange with Circle Line','nex Mall connected','NEL runs underground here']},
+        {id:'hou',name:'Hougang',code:'NE14',jp:null,facts:['Named from Hokkien for "back river"','Major residential node in NE','Near Hougang 1 mall']},
+        {id:'pun',name:'Punggol',code:'NE17',jp:null,facts:['Newest town in SG','Interchange with LRT and future CRL','Near Punggol Waterway']},
+      ]},
+      { id:'dt', name:'Downtown Line', code:'DTL', color:'#005ec4', stations:[
+        {id:'buk',name:'Bukit Panjang',code:'DT1',jp:null,facts:['Northwestern terminus of DTL','Interchange with LRT','Near Hillion Mall']},
+        {id:'bea',name:'Beauty World',code:'DT5',jp:null,facts:['Named after an old amusement park (1940s)','Near Bukit Timah food centre','Close to Rail Corridor walking trail']},
+        {id:'ste',name:'Stevens',code:'DT10',jp:null,facts:['Interchange with Thomson-East Coast Line','Quiet station near Orchard belt','Named after Sir Sinapah Stevens']},
+        {id:'new',name:'Newton',code:'DT11',jp:null,facts:['Interchange with NSL','Near Newton Circus hawker centre','Famous for durian stalls nearby']},
+        {id:'lit2',name:'Little India',code:'DT12',jp:null,facts:['Interchange with NEL','Heart of Little India area','Tekka Centre market nearby']},
+        {id:'bug2',name:'Bugis',code:'DT14',jp:null,facts:['Interchange with EWL','Shopping and street arts area','Haji Lane nearby']},
+        {id:'bay',name:'Bayfront',code:'DT16',jp:null,facts:['Interchange with CCL','Marina Bay Sands connected','Gardens by the Bay access']},
+        {id:'chi2',name:'Chinatown',code:'DT19',jp:null,facts:['Interchange with NEL','One of the most decorated MRT stations','Dragon motifs throughout station']},
+        {id:'tam2',name:'Tampines',code:'DT32',jp:null,facts:['Interchange with EWL','Eastern commercial hub','IKEA and Courts nearby']},
+        {id:'cha',name:'Changi Airport',code:'DT35',jp:null,facts:['Terminus of EWL airport branch + DTL','One of world\'s best airports','Free Skytrain within terminals']},
+      ]}
+    ]
+  },
+  osaka: {
+    lines: [
+      { id:'midosuji', name:'Midosuji Line', code:'M', color:'#e4001c', stations:[
+        {id:'shin-osaka',name:'Shin-Osaka',code:'M13',jp:'新大阪',facts:['Major Shinkansen bullet train hub','Connects to Tokaido/San\'yo Shinkansen','Gateway to Tokyo from Osaka']},
+        {id:'nakatsu',name:'Nakatsu',code:'M14',jp:'中津',facts:['Near Umeda area','Residential station','Close to Dojima River']},
+        {id:'umeda',name:'Umeda',code:'M16',jp:'梅田',facts:['Osaka\'s main commercial hub','Connects to Hankyu, Hanshin, JR lines','Massive underground shopping city beneath']},
+        {id:'yodoyabashi',name:'Yodoyabashi',code:'M17',jp:'淀屋橋',facts:['Financial district station','Connects to Keihan Electric Railway','Named after famous old bridge']},
+        {id:'hommachi',name:'Hommachi',code:'M18',jp:'本町',facts:['Central business district','Interchange with Chuo and Yotsubashi Lines','Named after "main town" street']},
+        {id:'shinsaibashi',name:'Shinsaibashi',code:'M19',jp:'心斎橋',facts:['Osaka\'s top shopping street above','Interchange with Nagahori Line','Dotonbori canal just minutes away']},
+        {id:'namba',name:'Namba',code:'M20',jp:'難波',facts:['Osaka\'s entertainment capital','Interchange with 5 other lines','Glico running man sign is walking distance']},
+        {id:'daikokucho',name:'Daikokucho',code:'M21',jp:'大国町',facts:['Interchange with Yotsubashi Line','Named after deity of wealth and good harvest','Quiet station south of Namba']},
+        {id:'dobutsuen',name:'Dobutsuen-mae',code:'M22',jp:'動物園前',facts:['Near Tennoji Zoo','Interchange with Sakaisuji Line','Shinsekai retro district walking distance']},
+        {id:'tennoji',name:'Tennoji',code:'M23',jp:'天王寺',facts:['Major interchange hub: 4+ lines','Near Tennoji Park and Abeno Harukas','Abeno Harukas is Japan\'s second-tallest building']},
+      ]},
+      { id:'tanimachi', name:'Tanimachi Line', code:'T', color:'#8e3ea5', stations:[
+        {id:'higashi',name:'Higashi-Umeda',code:'T11',jp:'東梅田',facts:['Near main Umeda hub','Walking distance to Umeda M16','Named "East Umeda"']},
+        {id:'tani4',name:'Tanimachi 4-chome',code:'T14',jp:'谷町四丁目',facts:['Interchange with Chuo Line','Near Osaka Castle Park','Historical government district']},
+        {id:'tani6',name:'Tanimachi 6-chome',code:'T15',jp:'谷町六丁目',facts:['Quiet residential area','Near Uemachi plateau','Walking to Osaka Museum of History']},
+        {id:'tani9',name:'Tanimachi 9-chome',code:'T16',jp:'谷町九丁目',facts:['Interchange with Sennichimae Line','Near Shitennoji Temple (oldest in Japan)','Historical religious district']},
+        {id:'ten2',name:'Tennoji',code:'T17',jp:'天王寺',facts:['Same major hub as M23','Interchange with 4+ lines','Harukas tower above']},
+        {id:'yae',name:'Yae-higashi',code:'T28',jp:'八尾南',facts:['Southern terminus of Tanimachi Line','In Yao City','Quiet suburban terminus']},
+      ]},
+      { id:'chuo', name:'Chuo Line', code:'C', color:'#009cb4', stations:[
+        {id:'cosmo',name:'Cosmosquare',code:'C10',jp:'コスモスクエア',facts:['Near Osaka port area','Connects to New Tram','Near INTEX Osaka convention centre']},
+        {id:'osakako',name:'Osakako',code:'C11',jp:'大阪港',facts:['Near Osaka Aquarium Kaiyukan','Gateway to Tempozan Marketplace','Santa Maria replica ship nearby']},
+        {id:'bentencho',name:'Bentencho',code:'C13',jp:'弁天町',facts:['Connects to JR Osaka Loop Line','Named after Benten island in bay','Near Osaka Tempozan area']},
+        {id:'hommachi2',name:'Hommachi',code:'C16',jp:'本町',facts:['Major interchange with Midosuji and Yotsubashi','Central business district','"Main Town" in Japanese']},
+        {id:'tanimachi4',name:'Tanimachi 4-chome',code:'C18',jp:'谷町四丁目',facts:['Interchange with Tanimachi Line','Near Osaka Castle','Osaka Historical Museum area']},
+        {id:'morinomiya',name:'Morinomiya',code:'C19',jp:'森ノ宮',facts:['Interchange with Nagahori Line','Near Osaka Castle Park east entrance','Large commercial/residential area']},
+        {id:'osaka-jo',name:'Osaka-jo Park',code:'C20',jp:'大阪城公園',facts:['Direct access to Osaka Castle','Cherry blossom spot in spring','Also served by JR Loop Line']},
+        {id:'kyobashi',name:'Kyobashi',code:'C21',jp:'京橋',facts:['Major interchange: Osaka Loop, Keihan, Nagahori Lines','One of Osaka\'s busiest commuter hubs','"Bridge to Kyoto" historically']},
+      ]},
+      { id:'nagahori', name:'Nagahori Tsurumi Line', code:'N', color:'#27ae60', stations:[
+        {id:'dome-mae',name:'Dome-mae Chiyozaki',code:'N13',jp:'ドーム前千代崎',facts:['Near Kyocera Dome (baseball stadium)','Packed on Hanshin Tigers game days','Connects to Hanshin Namba Line']},
+        {id:'nishi-ohashi',name:'Nishi-Ohashi',code:'N15',jp:'西大橋',facts:['Near Shinsaibashi shopping area','Named after west bridge over canal','Quiet station']},
+        {id:'shinsaibashi2',name:'Shinsaibashi',code:'N16',jp:'心斎橋',facts:['Interchange with Midosuji Line','America-Mura youth fashion district nearby','Dotonbori walking distance']},
+        {id:'nagabori-hon',name:'Nagahoribashi',code:'N17',jp:'長堀橋',facts:['Interchange with Sakaisuji Line','Named after famous canal bridge','Near Shinsaibashi east side']},
+        {id:'morinomiya2',name:'Morinomiya',code:'N20',jp:'森ノ宮',facts:['Interchange with Chuo Line','Near Osaka Castle Park','Green park area station']},
+        {id:'kyobashi2',name:'Kyobashi',code:'N23',jp:'京橋',facts:['Same busy hub as C21','Major rail interchange point','Shopping and entertainment area']},
+        {id:'tsurumi',name:'Tsurumi-ryokuchi',code:'N29',jp:'鶴見緑地',facts:['Eastern terminus','Access to Tsurumi Ryokuchi Park','1990 International Garden Expo site']},
+      ]}
+    ]
+  }
+};
+
+// =====================================================================
+// STATE
+// =====================================================================
+let currentCity = 'sg';
+let currentMode = 'explore';
+let playerName = '';
+let quizQuestions = [];
+let quizIndex = 0;
+let quizScore = 0;
+let quizCorrect = 0;
+let quizStreak = 0;
+let quizBestStreak = 0;
+let quizAnswered = false;
+let quizLog = []; // {q, answered, correct, timeUsed}
+let questionTimer = null;
+let questionTimeLeft = 0;
+let questionStartTime = 0;
+const Q_TIME = 15;
+const Q_TOTAL = 20;
+
+// =====================================================================
+// HELPERS
+// =====================================================================
+const shuffle = arr => [...arr].sort(() => Math.random() - 0.5);
+const pick = (arr, n) => shuffle(arr).slice(0, n);
+
+function getAllStations(city) {
+  const all = [];
+  DATA[city].lines.forEach(line => {
+    line.stations.forEach(st => {
+      all.push({...st, lineName:line.name, lineCode:line.code, lineColor:line.color, lineId:line.id, lineStations:line.stations});
+    });
+  });
+  return all;
+}
+
+// =====================================================================
+// CITY / MODE
+// =====================================================================
+function setCity(city) {
+  currentCity = city;
+  document.querySelectorAll('.city-btn').forEach((b,i) => b.classList.toggle('active', (i===0&&city==='sg')||(i===1&&city==='osaka')));
+  if (currentMode==='explore') renderExplore();
+  else if (currentMode==='build') initBuild();
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  const modes = ['explore','quiz','build','leaderboard'];
+  document.querySelectorAll('.mode-tab').forEach((t,i) => t.classList.toggle('active', modes[i]===mode));
+  document.getElementById('mode-explore').classList.toggle('hidden', mode!=='explore');
+  document.getElementById('mode-quiz').classList.toggle('hidden', mode!=='quiz');
+  document.getElementById('mode-build').classList.toggle('hidden', mode!=='build');
+  document.getElementById('mode-leaderboard').classList.toggle('hidden', mode!=='leaderboard');
+
+  if (mode==='explore') renderExplore();
+  else if (mode==='quiz') showNameScreen();
+  else if (mode==='build') initBuild();
+  else if (mode==='leaderboard') renderLeaderboard();
+}
+
+// =====================================================================
+// EXPLORE
+// =====================================================================
+function renderExplore() {
+  const container = document.getElementById('explore-lines');
+  container.innerHTML = '';
+  DATA[currentCity].lines.forEach(line => {
+    const block = document.createElement('div');
+    block.className = 'line-block';
+    block.style.borderLeftColor = line.color;
+    const header = document.createElement('div');
+    header.className = 'line-header';
+    header.innerHTML = `<div class="line-dot" style="background:${line.color}"></div><div class="line-name" style="color:${line.color}">${line.name}</div><div class="line-code">${line.stations.length} STATIONS ▾</div>`;
+    const row = document.createElement('div');
+    row.className = 'stations-row';
+    line.stations.forEach(st => {
+      const chip = document.createElement('div');
+      chip.className = 'station-chip';
+      chip.textContent = st.name + (st.jp ? ` ${st.jp}` : '');
+      chip.onclick = () => showStationModal(st, line);
+      row.appendChild(chip);
+    });
+    header.onclick = () => row.classList.toggle('open');
+    block.appendChild(header);
+    block.appendChild(row);
+    container.appendChild(block);
+  });
+}
+
+function showStationModal(st, line) {
+  document.getElementById('modal-badge').textContent = `${line.code} · ${st.code}`;
+  document.getElementById('modal-badge').style.cssText = `background:${line.color}33;border:1px solid ${line.color}66;color:${line.color}`;
+  document.getElementById('modal-name').textContent = st.name;
+  document.getElementById('modal-name').style.color = line.color;
+  document.getElementById('modal-jp').textContent = st.jp || '';
+  document.getElementById('modal-facts').innerHTML = st.facts.map((f,i) => `<div class="fact-row"><span class="fact-icon">${['📍','🚇','💡'][i]}</span><div class="fact-text">${f}</div></div>`).join('');
+  const stIdx = line.stations.findIndex(s => s.id===st.id);
+  const prev = stIdx>0 ? line.stations[stIdx-1].name : null;
+  const next = stIdx<line.stations.length-1 ? line.stations[stIdx+1].name : null;
+  let nb = '';
+  if (prev) nb += `← <span>${prev}</span>`;
+  if (prev && next) nb += '&nbsp;&nbsp;|&nbsp;&nbsp;';
+  if (next) nb += `<span>${next}</span> →`;
+  document.getElementById('modal-neighbors').innerHTML = nb ? `<strong>Neighbours:</strong>&nbsp; ${nb}` : '';
+  document.getElementById('station-modal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target===document.getElementById('station-modal') || e.currentTarget.tagName==='BUTTON')
+    document.getElementById('station-modal').classList.remove('open');
+}
+
+// =====================================================================
+// QUIZ — NAME SCREEN
+// =====================================================================
+function showNameScreen() {
+  document.getElementById('quiz-name-screen').classList.remove('hidden');
+  document.getElementById('quiz-active').classList.add('hidden');
+  document.getElementById('quiz-results').classList.add('hidden');
+}
+
+function checkNameInput() {
+  const val = document.getElementById('player-name-input').value.trim();
+  document.getElementById('start-quiz-btn').disabled = val.length < 1;
+}
+
+function startQuiz() {
+  playerName = document.getElementById('player-name-input').value.trim() || 'PLAYER';
+  document.getElementById('quiz-name-screen').classList.add('hidden');
+  document.getElementById('quiz-active').classList.remove('hidden');
+  document.getElementById('quiz-results').classList.add('hidden');
+
+  // Build 20 questions
+  quizQuestions = buildQuestionBank(Q_TOTAL);
+  quizIndex = 0;
+  quizScore = 0;
+  quizCorrect = 0;
+  quizStreak = 0;
+  quizBestStreak = 0;
+  quizLog = [];
+  quizAnswered = false;
+
+  document.getElementById('q-city-label').textContent = currentCity === 'sg' ? '🇸🇬 SG' : '🇯🇵 OSAKA';
+  updateLiveStats();
+  loadQuestion();
+}
+
+function retryQuiz() {
+  document.getElementById('player-name-input').value = playerName;
+  document.getElementById('start-quiz-btn').disabled = false;
+  startQuiz();
+}
+
+function changePlayer() {
+  document.getElementById('player-name-input').value = '';
+  document.getElementById('start-quiz-btn').disabled = true;
+  showNameScreen();
+}
+
+// =====================================================================
+// QUIZ — QUESTION BANK
+// =====================================================================
+function buildQuestionBank(n) {
+  const bank = [];
+  const all = getAllStations(currentCity);
+  const types = [0,1,2,3];
+  for (let i = 0; i < n; i++) {
+    bank.push(generateQ(types[i % types.length], all));
+  }
+  return shuffle(bank);
+}
+
+function generateQ(type, all) {
+  if (type === 0) {
+    const st = all[Math.floor(Math.random()*all.length)];
+    const lines = DATA[currentCity].lines.map(l => l.name);
+    const wrong = pick(lines.filter(l => l!==st.lineName), 3);
+    const options = shuffle([st.lineName, ...wrong]);
+    return { type:'LINE ID', question:`Which line does <strong>${st.name}</strong> belong to?`, hint: st.jp ? `(${st.jp})` : '', answer:st.lineName, options };
+  } else if (type === 1) {
+    const linePicked = DATA[currentCity].lines[Math.floor(Math.random()*DATA[currentCity].lines.length)];
+    const stIdx = Math.floor(Math.random()*(linePicked.stations.length-1));
+    const st = linePicked.stations[stIdx];
+    const next = linePicked.stations[stIdx+1];
+    const wrong = pick(linePicked.stations.filter(s=>s.id!==next.id).map(s=>s.name), 3);
+    const options = shuffle([next.name, ...wrong]);
+    return { type:'NEXT STATION', question:`On the <strong>${linePicked.name}</strong>, what is the next stop after <strong>${st.name}</strong>?`, hint:'', answer:next.name, options };
+  } else if (type === 2) {
+    const st = all[Math.floor(Math.random()*all.length)];
+    const fact = st.facts[0];
+    const wrong = pick(all.filter(s=>s.id!==st.id).map(s=>s.name), 3);
+    const options = shuffle([st.name, ...wrong]);
+    return { type:'STATION FACT', question:`Which station is known for: <em>"${fact}"</em>`, hint:'', answer:st.name, options };
+  } else {
+    const line = DATA[currentCity].lines[Math.floor(Math.random()*DATA[currentCity].lines.length)];
+    const correct = line.stations.length;
+    const wrongs = shuffle([correct-2,correct-1,correct+1,correct+2].filter(n=>n>0&&n!==correct)).slice(0,3);
+    const options = shuffle([correct,...wrongs]).map(String);
+    return { type:'LINE KNOWLEDGE', question:`How many stations are on the <strong>${line.name}</strong>?`, hint:`(in this game's dataset)`, answer:String(correct), options };
+  }
+}
+
+// =====================================================================
+// QUIZ — ACTIVE
+// =====================================================================
+function loadQuestion() {
+  if (quizIndex >= Q_TOTAL) { endQuiz(); return; }
+  quizAnswered = false;
+  const q = quizQuestions[quizIndex];
+
+  // Progress
+  const pct = ((quizIndex) / Q_TOTAL) * 100;
+  document.getElementById('progress-fill').style.width = Math.max(2, pct) + '%';
+  document.getElementById('q-progress-text').textContent = `Q ${quizIndex+1} / ${Q_TOTAL}`;
+
+  document.getElementById('q-type-label').textContent = '— ' + q.type + ' —';
+  document.getElementById('q-text').innerHTML = q.question;
+  document.getElementById('q-hint').textContent = q.hint;
+  document.getElementById('q-feedback').innerHTML = '';
+  document.getElementById('quiz-next-btn').disabled = true;
+
+  const oc = document.getElementById('q-options');
+  oc.innerHTML = '';
+  q.options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.innerHTML = opt;
+    btn.onclick = () => answerQuestion(opt, btn);
+    oc.appendChild(btn);
+  });
+
+  startQuestionTimer();
+}
+
+function startQuestionTimer() {
+  clearInterval(questionTimer);
+  questionTimeLeft = Q_TIME;
+  questionStartTime = Date.now();
+  updateTimerUI();
+
+  questionTimer = setInterval(() => {
+    questionTimeLeft--;
+    updateTimerUI();
+    if (questionTimeLeft <= 0) {
+      clearInterval(questionTimer);
+      timeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerUI() {
+  const arc = document.getElementById('timer-arc');
+  const numEl = document.getElementById('timer-num');
+  const circumference = 2 * Math.PI * 27;
+  const offset = circumference * (1 - questionTimeLeft / Q_TIME);
+  arc.style.strokeDashoffset = offset;
+  numEl.textContent = questionTimeLeft;
+
+  arc.classList.remove('warn','danger');
+  numEl.classList.remove('warn','danger');
+  if (questionTimeLeft <= 5) { arc.classList.add('danger'); numEl.classList.add('danger'); }
+  else if (questionTimeLeft <= 9) { arc.classList.add('warn'); numEl.classList.add('warn'); }
+}
+
+function timeOut() {
+  if (quizAnswered) return;
+  quizAnswered = true;
+  quizStreak = 0;
+  const q = quizQuestions[quizIndex];
+  const timeUsed = Q_TIME;
+  quizLog.push({ q: q.question.replace(/<[^>]+>/g,''), type: q.type, correct: false, timeUsed, answer: q.answer, given: '—' });
+
+  document.querySelectorAll('.quiz-opt').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.answer || b.innerHTML === q.answer) b.classList.add('correct');
+  });
+  document.getElementById('q-feedback').innerHTML = `<span style="color:var(--red)">⏱ Time's up! The answer was: <strong>${q.answer}</strong></span>`;
+  document.getElementById('quiz-next-btn').disabled = false;
+  updateLiveStats();
+}
+
+function answerQuestion(chosen, btn) {
+  if (quizAnswered) return;
+  clearInterval(questionTimer);
+  quizAnswered = true;
+  const q = quizQuestions[quizIndex];
+  const timeUsed = Q_TIME - questionTimeLeft;
+  const correct = chosen === q.answer;
+
+  document.querySelectorAll('.quiz-opt').forEach(b => {
+    b.disabled = true;
+    if (b.textContent === q.answer || b.innerHTML === q.answer) b.classList.add('correct');
+  });
+
+  if (correct) {
+    btn.classList.add('correct');
+    const speedBonus = Math.max(0, Math.floor((Q_TIME - timeUsed) / 3));
+    const streakBonus = quizStreak >= 2 ? quizStreak * 2 : 0;
+    const pts = 10 + speedBonus + streakBonus;
+    quizScore += pts;
+    quizCorrect++;
+    quizStreak++;
+    if (quizStreak > quizBestStreak) quizBestStreak = quizStreak;
+    let fb = `<span style="color:var(--accent3)">✓ Correct!</span>`;
+    if (speedBonus > 0) fb += ` <span style="color:var(--muted);font-size:.68rem">+${speedBonus} speed</span>`;
+    if (streakBonus > 0) fb += ` <span style="color:var(--gold);font-size:.68rem">+${streakBonus} streak</span>`;
+    document.getElementById('q-feedback').innerHTML = fb;
+  } else {
+    btn.classList.add('wrong');
+    quizStreak = 0;
+    document.getElementById('q-feedback').innerHTML = `<span style="color:var(--red)">✗ Correct answer: <strong>${q.answer}</strong></span>`;
+  }
+
+  quizLog.push({ q: q.question.replace(/<[^>]+>/g,''), type: q.type, correct, timeUsed, answer: q.answer, given: chosen });
+  updateLiveStats();
+  document.getElementById('quiz-next-btn').disabled = false;
+}
+
+function updateLiveStats() {
+  document.getElementById('live-score').textContent = quizScore;
+  document.getElementById('live-correct').textContent = quizCorrect;
+  document.getElementById('live-streak').textContent = quizStreak;
+}
+
+function nextQuestion() {
+  quizIndex++;
+  loadQuestion();
+}
+
+// =====================================================================
+// QUIZ — END
+// =====================================================================
+function endQuiz() {
+  clearInterval(questionTimer);
+  document.getElementById('quiz-active').classList.add('hidden');
+  document.getElementById('quiz-results').classList.remove('hidden');
+
+  const acc = Math.round((quizCorrect / Q_TOTAL) * 100);
+  const avgTime = quizLog.length ? (quizLog.reduce((s,l) => s + l.timeUsed, 0) / quizLog.length).toFixed(1) : 0;
+
+  document.getElementById('progress-fill').style.width = '100%';
+  document.getElementById('res-title').textContent = acc >= 90 ? 'LEGENDARY!' : acc >= 70 ? 'EXCELLENT!' : acc >= 50 ? 'GOOD RUN!' : 'KEEP GOING!';
+  document.getElementById('res-player').textContent = playerName.toUpperCase() + ' · ' + (currentCity==='sg'?'🇸🇬 SINGAPORE MRT':'🇯🇵 OSAKA METRO');
+  document.getElementById('res-score').textContent = quizScore;
+  document.getElementById('res-acc').textContent = acc + '%';
+  document.getElementById('res-avg').textContent = avgTime + 's';
+  document.getElementById('res-streak').textContent = quizBestStreak;
+
+  const ranks = [[95,'🥇 TRAIN GRANDMASTER'],[80,'🥈 LINE MASTER'],[65,'🥉 STATION EXPERT'],[50,'🎖️ COMMUTER'],[0,'🚶 PASSENGER']];
+  document.getElementById('res-rank-badge').textContent = (ranks.find(([t]) => acc >= t) || ranks[ranks.length-1])[1];
+
+  // Breakdown table
+  const bd = document.getElementById('results-breakdown');
+  bd.innerHTML = quizLog.map((l,i) => `
+    <div class="rb-row ${l.correct?'correct-row':'wrong-row'}">
+      <div class="rb-qnum">Q${i+1}</div>
+      <div class="rb-q">${l.type}</div>
+      <div class="rb-result">${l.correct ? '✓' : '✗'}</div>
+      <div class="rb-time">${l.timeUsed}s</div>
+    </div>`).join('');
+
+  // Save to leaderboard
+  saveToLeaderboard({ name: playerName, score: quizScore, acc, avgTime: parseFloat(avgTime), correct: quizCorrect, bestStreak: quizBestStreak, city: currentCity, date: new Date().toLocaleDateString() });
+}
+
+// =====================================================================
+// LEADERBOARD (localStorage)
+// =====================================================================
+let lbFilter = 'all';
+
+function getLeaderboard() {
+  try { return JSON.parse(localStorage.getItem('trainmaster_lb') || '[]'); } catch { return []; }
+}
+
+function saveToLeaderboard(entry) {
+  const lb = getLeaderboard();
+  lb.push(entry);
+  lb.sort((a,b) => b.score - a.score || a.avgTime - b.avgTime);
+  localStorage.setItem('trainmaster_lb', JSON.stringify(lb.slice(0, 100)));
+}
+
+function setLBFilter(f) {
+  lbFilter = f;
+  document.querySelectorAll('.lb-filter').forEach((b,i) => b.classList.toggle('active', ['all','sg','osaka'][i]===f));
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const all = getLeaderboard();
+  const filtered = lbFilter === 'all' ? all : all.filter(e => e.city === lbFilter);
+  const container = document.getElementById('lb-content');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="lb-empty">NO ENTRIES YET<br><span style="font-size:.65rem;margin-top:8px;display:block">Complete a quiz to appear here</span></div>';
+    return;
+  }
+  container.innerHTML = `
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>PLAYER</th>
+          <th>SCORE</th>
+          <th>ACCURACY</th>
+          <th>AVG TIME</th>
+          <th>STREAK</th>
+          <th>NETWORK</th>
+          <th>DATE</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filtered.slice(0, 20).map((e, i) => `
+          <tr>
+            <td class="lb-rank ${i===0?'gold':i===1?'silver':i===2?'bronze':''}">${i+1}</td>
+            <td class="lb-name">${e.name}</td>
+            <td class="lb-score">${e.score}</td>
+            <td class="lb-acc">${e.acc}%</td>
+            <td class="lb-time-avg">${e.avgTime}s</td>
+            <td style="color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:1.3rem">${e.bestStreak || 0}</td>
+            <td><span class="lb-city-badge">${e.city==='sg'?'🇸🇬 SG':'🇯🇵 OSAKA'}</span></td>
+            <td style="color:var(--muted);font-size:.65rem">${e.date||''}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function clearLeaderboard() {
+  if (confirm('Clear all leaderboard entries?')) {
+    localStorage.removeItem('trainmaster_lb');
+    renderLeaderboard();
+  }
+}
+
+// =====================================================================
+// BUILD MODE
+// =====================================================================
+const CHALLENGES = {
+  sg:[
+    {desc:'EWL: Pasir Ris → Tampines → Simei → Tanah Merah',line:'ew',start:'pas',end:'tan'},
+    {desc:'NSL: Toa Payoh → Bishan → Ang Mo Kio → Yishun',line:'ns',start:'toa',end:'yis'},
+    {desc:'CCL: Dhoby Ghaut → Bras Basah → Esplanade → Promenade',line:'cc',start:'dho',end:'pro'},
+    {desc:'NEL: HarbourFront → Outram Park → Chinatown → Clarke Quay',line:'ne',start:'har',end:'cla'},
+  ],
+  osaka:[
+    {desc:'Midosuji: Shin-Osaka → Umeda → Yodoyabashi → Hommachi',line:'midosuji',start:'shin-osaka',end:'hommachi'},
+    {desc:'Midosuji: Shinsaibashi → Namba → Daikokucho → Dobutsuen-mae',line:'midosuji',start:'shinsaibashi',end:'dobutsuen'},
+    {desc:'Chuo: Hommachi → Tanimachi 4-chome → Morinomiya → Osaka-jo Park',line:'chuo',start:'hommachi2',end:'osaka-jo'},
+    {desc:'Nagahori: Nishi-Ohashi → Shinsaibashi → Nagahoribashi → Morinomiya',line:'nagahori',start:'nishi-ohashi',end:'morinomiya2'},
+  ]
+};
+
+let buildRoute = [], currentChallenge = null;
+
+function initBuild() {
+  buildRoute = [];
+  newChallenge();
+}
+
+function newChallenge() {
+  buildRoute = [];
+  document.getElementById('build-result').classList.remove('show');
+  const challenges = CHALLENGES[currentCity];
+  currentChallenge = challenges[Math.floor(Math.random()*challenges.length)];
+  document.getElementById('build-challenge-label').textContent = '🎯 ' + currentChallenge.desc;
+  renderBank();
+  renderRoute();
+}
+
+function renderBank() {
+  const line = DATA[currentCity].lines.find(l => l.id===currentChallenge.line);
+  const bank = document.getElementById('station-bank');
+  bank.innerHTML = '';
+  if (!line) return;
+  shuffle(line.stations).forEach(st => {
+    const chip = document.createElement('div');
+    chip.className = 'bank-chip';
+    chip.id = 'bank-' + st.id;
+    chip.textContent = st.name;
+    chip.onclick = () => addToRoute(st, line);
+    bank.appendChild(chip);
+  });
+}
+
+function addToRoute(st, line) {
+  const chip = document.getElementById('bank-' + st.id);
+  if (chip?.classList.contains('used')) return;
+  buildRoute.push({st, line});
+  if (chip) chip.classList.add('used');
+  renderRoute();
+  document.getElementById('build-result').classList.remove('show');
+}
+
+function renderRoute() {
+  const display = document.getElementById('route-display');
+  if (!buildRoute.length) {
+    display.innerHTML = '<span class="route-placeholder">← Click stations below to add them to your route</span>';
+    display.classList.remove('has-route');
+    return;
+  }
+  display.classList.add('has-route');
+  display.innerHTML = '';
+  buildRoute.forEach((item, idx) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'route-station';
+    const node = document.createElement('div');
+    node.className = 'route-node';
+    node.textContent = item.st.name;
+    node.onclick = () => removeFromRoute(idx);
+    wrapper.appendChild(node);
+    if (idx < buildRoute.length-1) {
+      const arr = document.createElement('span');
+      arr.className = 'route-arrow';
+      arr.textContent = '→';
+      wrapper.appendChild(arr);
+    }
+    display.appendChild(wrapper);
+  });
+}
+
+function removeFromRoute(idx) {
+  const removed = buildRoute.splice(idx, 1)[0];
+  const chip = document.getElementById('bank-' + removed.st.id);
+  if (chip) chip.classList.remove('used');
+  renderRoute();
+}
+
+function clearRoute() {
+  buildRoute.forEach(item => {
+    const chip = document.getElementById('bank-' + item.st.id);
+    if (chip) chip.classList.remove('used');
+  });
+  buildRoute = [];
+  renderRoute();
+  document.getElementById('build-result').classList.remove('show');
+}
+
+function checkRoute() {
+  const result = document.getElementById('build-result');
+  if (!buildRoute.length) {
+    result.innerHTML = '<span style="color:var(--muted)">Add some stations first!</span>';
+    result.classList.add('show');
+    return;
+  }
+  const line = DATA[currentCity].lines.find(l => l.id===currentChallenge.line);
+  const correctIds = line.stations.map(s => s.id);
+  const routeIds = buildRoute.map(i => i.st.id);
+  const si = correctIds.indexOf(currentChallenge.start);
+  const ei = correctIds.indexOf(currentChallenge.end);
+  if (si < 0 || ei < 0) { result.innerHTML = 'Challenge data error.'; result.classList.add('show'); return; }
+  const correctSegment = correctIds.slice(Math.min(si,ei), Math.max(si,ei)+1);
+  const allCorrect = routeIds.length===correctSegment.length && routeIds.every((id,i) => id===correctSegment[i]);
+  document.querySelectorAll('.route-node').forEach((node,i) => {
+    node.classList.remove('correct-node','wrong-node');
+    if (i < routeIds.length) {
+      node.classList.add(routeIds[i]===correctSegment[i] ? 'correct-node' : 'wrong-node');
+    }
+  });
+  if (allCorrect) {
+    result.innerHTML = `<span style="color:var(--accent3)">✓ Perfect route! All ${correctSegment.length} stations in the right order.</span>`;
+  } else {
+    const correctNames = correctSegment.map(id => line.stations.find(s=>s.id===id)?.name).join(' → ');
+    result.innerHTML = `<span style="color:var(--red)">✗ Not quite.</span><br><span style="color:var(--muted)">Correct: <strong style="color:var(--text)">${correctNames}</strong></span>`;
+  }
+  result.classList.add('show');
+}
+
+// =====================================================================
+// INIT
+// =====================================================================
+renderExplore();
+</script>
+</body>
+</html>
